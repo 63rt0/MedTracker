@@ -10,19 +10,33 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.berto.medtracker.data.repository.EntryRepository
 import com.berto.medtracker.domain.model.Entry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -31,15 +45,22 @@ import java.time.format.DateTimeFormatter
 private val displayDateTimeFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEntryScreen(
+    entryRepository: EntryRepository,
     onAddEntry: (Entry) -> Unit,
     onGoToSeeEntry: () -> Unit,
     onGoToConfig: () -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val coroutineScope = rememberCoroutineScope()
 
-    var med by remember { mutableStateOf("") }
+    var meds by remember { mutableStateOf<List<String>>(emptyList()) }
+    var selectedMed by remember { mutableStateOf("") }
+    var medDropdownExpanded by remember { mutableStateOf(false) }
+
     var dosis by remember { mutableStateOf("") }
     var efectos by remember { mutableStateOf("") }
     var info by remember { mutableStateOf("") }
@@ -61,6 +82,42 @@ fun AddEntryScreen(
     var message by remember { mutableStateOf("") }
 
     val selectedDateTime = LocalDateTime.of(selectedDate, selectedTime)
+
+    suspend fun refreshMeds() {
+        val loadedMeds = withContext(Dispatchers.IO) {
+            entryRepository.getAllMeds()
+        }
+
+        meds = loadedMeds
+
+        if (selectedMed.isBlank() || selectedMed !in loadedMeds) {
+            selectedMed = loadedMeds.firstOrNull().orEmpty()
+        }
+
+        if (selectedMed.isNotBlank()) {
+            medError = false
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        refreshMeds()
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                coroutineScope.launch {
+                    refreshMeds()
+                }
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     fun openTimePicker() {
         TimePickerDialog(
@@ -104,23 +161,55 @@ fun AddEntryScreen(
             style = MaterialTheme.typography.headlineMedium
         )
 
-        OutlinedTextField(
-            value = med,
-            onValueChange = {
-                med = it
-                medError = false
-            },
-            label = { Text("Med") },
-            placeholder = { Text("Ejemplo: Paracetamol") },
-            isError = medError,
-            supportingText = {
-                if (medError) {
-                    Text("Med es obligatorio")
+        ExposedDropdownMenuBox(
+            expanded = medDropdownExpanded,
+            onExpandedChange = {
+                medDropdownExpanded = !medDropdownExpanded
+            }
+        ) {
+            OutlinedTextField(
+                value = selectedMed,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Med") },
+                placeholder = { Text("No hay Meds. Añade uno en Config.") },
+                isError = medError,
+                supportingText = {
+                    if (medError) {
+                        Text("Debes seleccionar un Med")
+                    }
+                },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(
+                        expanded = medDropdownExpanded
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+
+            ExposedDropdownMenu(
+                expanded = medDropdownExpanded,
+                onDismissRequest = {
+                    medDropdownExpanded = false
                 }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
+            ) {
+                meds.forEach { med ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(med)
+                        },
+                        onClick = {
+                            selectedMed = med
+                            medError = false
+                            message = ""
+                            medDropdownExpanded = false
+                        }
+                    )
+                }
+            }
+        }
 
         OutlinedTextField(
             value = dosis,
@@ -188,7 +277,7 @@ fun AddEntryScreen(
         Button(
             modifier = Modifier.fillMaxWidth(),
             onClick = {
-                val medValue = med.trim()
+                val medValue = selectedMed.trim()
                 val dosisValue = dosis.trim()
 
                 medError = medValue.isBlank()
@@ -214,7 +303,6 @@ fun AddEntryScreen(
 
                 onAddEntry(entry)
 
-                med = ""
                 dosis = ""
                 efectos = ""
                 info = ""

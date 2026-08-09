@@ -14,9 +14,24 @@ class MedTrackerDbHelper(
 ) {
 
     override fun onCreate(db: SQLiteDatabase) {
+        createEntriesTable(db)
+        createMedsTable(db)
+    }
+
+    override fun onUpgrade(
+        db: SQLiteDatabase,
+        oldVersion: Int,
+        newVersion: Int
+    ) {
+        if (oldVersion < 2) {
+            createMedsTable(db)
+        }
+    }
+
+    private fun createEntriesTable(db: SQLiteDatabase) {
         db.execSQL(
             """
-            CREATE TABLE entries (
+            CREATE TABLE IF NOT EXISTS entries (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 med TEXT NOT NULL,
                 dosis TEXT NOT NULL,
@@ -29,17 +44,19 @@ class MedTrackerDbHelper(
         )
     }
 
-    override fun onUpgrade(
-        db: SQLiteDatabase,
-        oldVersion: Int,
-        newVersion: Int
-    ) {
-        db.execSQL("DROP TABLE IF EXISTS entries")
-        onCreate(db)
+    private fun createMedsTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS meds (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE COLLATE NOCASE
+            )
+            """.trimIndent()
+        )
     }
 
     companion object {
         private const val DATABASE_NAME = "medtracker.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
     }
 }

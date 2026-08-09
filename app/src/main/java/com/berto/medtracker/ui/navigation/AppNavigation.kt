@@ -29,6 +29,7 @@ fun AppNavigation(
     ) {
         composable(AppRoutes.ADD_ENTRY) {
             AddEntryScreen(
+                entryRepository = entryRepository,
                 onAddEntry = { entry ->
                     lifecycleScope.launch(Dispatchers.IO) {
                         val insertedId = entryRepository.insertEntry(entry)
@@ -36,15 +37,15 @@ fun AppNavigation(
                         Log.d(
                             "MedTracker",
                             """
-                            Registro guardado en BBDD:
-                            ID: $insertedId
-                            Med: ${entry.med}
-                            Dosis: ${entry.dosis}
-                            Efectos: ${entry.efectos}
-                            FechaToma: ${entry.fechaToma}
-                            FechaRegistro: ${entry.fechaRegistro}
-                            Info: ${entry.info}
-                            """.trimIndent()
+                Registro guardado en BBDD:
+                ID: $insertedId
+                Med: ${entry.med}
+                Dosis: ${entry.dosis}
+                Efectos: ${entry.efectos}
+                FechaToma: ${entry.fechaToma}
+                FechaRegistro: ${entry.fechaRegistro}
+                Info: ${entry.info}
+                """.trimIndent()
                         )
                     }
                 },
@@ -91,6 +92,7 @@ fun AppNavigation(
 
         composable(AppRoutes.CONFIG) {
             ConfigScreen(
+                entryRepository = entryRepository,
                 onGoToAddEntry = {
                     navController.navigate(AppRoutes.ADD_ENTRY)
                 },

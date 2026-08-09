@@ -49,9 +49,7 @@ private val displayDateTimeFormatter: DateTimeFormatter =
 @Composable
 fun AddEntryScreen(
     entryRepository: EntryRepository,
-    onAddEntry: (Entry) -> Unit,
-    onGoToEntries: () -> Unit,
-    onGoToConfig: () -> Unit
+    onAddEntry: (Entry) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -315,20 +313,6 @@ fun AddEntryScreen(
             }
         ) {
             Text("Añadir Registro")
-        }
-
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onGoToEntries
-        ) {
-            Text("Registros")
-        }
-
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onGoToConfig
-        ) {
-            Text("Config")
         }
 
         if (message.isNotBlank()) {

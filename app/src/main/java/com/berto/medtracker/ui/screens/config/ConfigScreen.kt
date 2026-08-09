@@ -31,9 +31,7 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfigScreen(
-    entryRepository: EntryRepository,
-    onGoToAddEntry: () -> Unit,
-    onGoToEntries: () -> Unit
+    entryRepository: EntryRepository
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -206,20 +204,6 @@ fun ConfigScreen(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium
             )
-        }
-
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onGoToAddEntry
-        ) {
-            Text("Añadir")
-        }
-
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onGoToEntries
-        ) {
-            Text("Registros")
         }
     }
 }

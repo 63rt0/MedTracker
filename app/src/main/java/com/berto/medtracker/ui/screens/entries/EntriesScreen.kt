@@ -57,9 +57,7 @@ private val seeEntryDateFormatter: DateTimeFormatter =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EntriesScreen(
-    entryRepository: EntryRepository,
-    onGoToAddEntry: () -> Unit,
-    onGoToConfig: () -> Unit
+    entryRepository: EntryRepository
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -370,20 +368,6 @@ fun EntriesScreen(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium
             )
-        }
-
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onGoToAddEntry
-        ) {
-            Text("Añadir")
-        }
-
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onGoToConfig
-        ) {
-            Text("Config")
         }
     }
 

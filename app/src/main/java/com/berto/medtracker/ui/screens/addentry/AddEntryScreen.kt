@@ -33,7 +33,9 @@ private val displayDateTimeFormatter: DateTimeFormatter =
 
 @Composable
 fun AddEntryScreen(
-    onAddEntry: (Entry) -> Unit
+    onAddEntry: (Entry) -> Unit,
+    onGoToSeeEntry: () -> Unit,
+    onGoToConfig: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -140,7 +142,9 @@ fun AddEntryScreen(
 
         OutlinedTextField(
             value = efectos,
-            onValueChange = { efectos = it },
+            onValueChange = {
+                efectos = it
+            },
             label = { Text("Efectos") },
             placeholder = { Text("Ejemplo: Dolor reducido") },
             modifier = Modifier.fillMaxWidth(),
@@ -172,7 +176,9 @@ fun AddEntryScreen(
 
         OutlinedTextField(
             value = info,
-            onValueChange = { info = it },
+            onValueChange = {
+                info = it
+            },
             label = { Text("Info") },
             placeholder = { Text("Información adicional") },
             modifier = Modifier.fillMaxWidth(),
@@ -221,6 +227,20 @@ fun AddEntryScreen(
             }
         ) {
             Text("Añadir Registro")
+        }
+
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onGoToSeeEntry
+        ) {
+            Text("Ver Registros")
+        }
+
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onGoToConfig
+        ) {
+            Text("Config")
         }
 
         if (message.isNotBlank()) {

@@ -60,6 +60,7 @@ fun AppNavigation(
 
         composable(AppRoutes.SEE_ENTRY) {
             SeeEntryScreen(
+                entryRepository = entryRepository,
                 onGoToAddEntry = {
                     navController.navigate(AppRoutes.ADD_ENTRY)
                 },

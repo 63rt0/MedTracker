@@ -1,47 +1,39 @@
 package com.berto.medtracker
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.berto.medtracker.ui.theme.MedTrackerTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import com.berto.medtracker.ui.screens.addentry.AddEntryScreen
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
         setContent {
-            MedTrackerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
+            MaterialTheme {
+                Surface {
+                    AddEntryScreen(
+                        onAddEntry = { entry ->
+                            Log.d(
+                                "MedTracker",
+                                """
+                                Nuevo registro:
+                                Med: ${entry.med}
+                                Dosis: ${entry.dosis}
+                                Efectos: ${entry.efectos}
+                                FechaToma: ${entry.fechaToma}
+                                FechaRegistro: ${entry.fechaRegistro}
+                                Info: ${entry.info}
+                                """.trimIndent()
+                            )
+                        }
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MedTrackerTheme {
-        Greeting("Android")
     }
 }

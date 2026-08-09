@@ -33,7 +33,7 @@ import kotlinx.coroutines.withContext
 fun ConfigScreen(
     entryRepository: EntryRepository,
     onGoToAddEntry: () -> Unit,
-    onGoToSeeEntry: () -> Unit
+    onGoToEntries: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -212,14 +212,14 @@ fun ConfigScreen(
             modifier = Modifier.fillMaxWidth(),
             onClick = onGoToAddEntry
         ) {
-            Text("Ir a Añadir Registro")
+            Text("Añadir")
         }
 
         OutlinedButton(
             modifier = Modifier.fillMaxWidth(),
-            onClick = onGoToSeeEntry
+            onClick = onGoToEntries
         ) {
-            Text("Ir a Ver Registros")
+            Text("Registros")
         }
     }
 }

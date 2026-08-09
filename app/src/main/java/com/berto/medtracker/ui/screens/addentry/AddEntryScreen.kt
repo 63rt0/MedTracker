@@ -50,7 +50,7 @@ private val displayDateTimeFormatter: DateTimeFormatter =
 fun AddEntryScreen(
     entryRepository: EntryRepository,
     onAddEntry: (Entry) -> Unit,
-    onGoToSeeEntry: () -> Unit,
+    onGoToEntries: () -> Unit,
     onGoToConfig: () -> Unit
 ) {
     val context = LocalContext.current
@@ -157,7 +157,7 @@ fun AddEntryScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Text(
-            text = "Añadir Registro",
+            text = "Añadir",
             style = MaterialTheme.typography.headlineMedium
         )
 
@@ -319,9 +319,9 @@ fun AddEntryScreen(
 
         OutlinedButton(
             modifier = Modifier.fillMaxWidth(),
-            onClick = onGoToSeeEntry
+            onClick = onGoToEntries
         ) {
-            Text("Ver Registros")
+            Text("Registros")
         }
 
         OutlinedButton(

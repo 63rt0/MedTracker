@@ -1,4 +1,4 @@
-package com.berto.medtracker.ui.screens.seeentry
+package com.berto.medtracker.ui.screens.entries
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -56,11 +56,10 @@ private val seeEntryDateFormatter: DateTimeFormatter =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SeeEntryScreen(
+fun EntriesScreen(
     entryRepository: EntryRepository,
     onGoToAddEntry: () -> Unit,
-    onGoToConfig: () -> Unit,
-    onGoToEditEntry: (Long) -> Unit
+    onGoToConfig: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -193,12 +192,12 @@ fun SeeEntryScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Text(
-            text = "Ver Registros",
+            text = "Registros",
             style = MaterialTheme.typography.headlineMedium
         )
 
         Text(
-            text = "Selecciona una Med para ver su última toma y su frecuencia aproximada.",
+            text = "Selecciona una Med para ver sus registros.",
             style = MaterialTheme.typography.bodyMedium
         )
 
@@ -377,14 +376,14 @@ fun SeeEntryScreen(
             modifier = Modifier.fillMaxWidth(),
             onClick = onGoToAddEntry
         ) {
-            Text("Ir a Añadir Registro")
+            Text("Añadir")
         }
 
         OutlinedButton(
             modifier = Modifier.fillMaxWidth(),
             onClick = onGoToConfig
         ) {
-            Text("Ir a Config")
+            Text("Config")
         }
     }
 

@@ -167,4 +167,38 @@ class EntryRepository(
 
         return deletedRows > 0
     }
+
+    fun updateEntry(entry: Entry): Boolean {
+        val db = dbHelper.writableDatabase
+
+        val values = ContentValues().apply {
+            put("med", entry.med)
+            put("dosis", entry.dosis)
+            put("efectos", entry.efectos)
+            put("fecha_toma", entry.fechaToma.format(formatter))
+            put("fecha_registro", entry.fechaRegistro.format(formatter))
+            put("info", entry.info)
+        }
+
+        val updatedRows = db.update(
+            "entries",
+            values,
+            "id = ?",
+            arrayOf(entry.id.toString())
+        )
+
+        return updatedRows > 0
+    }
+
+    fun deleteEntry(entryId: Long): Boolean {
+        val db = dbHelper.writableDatabase
+
+        val deletedRows = db.delete(
+            "entries",
+            "id = ?",
+            arrayOf(entryId.toString())
+        )
+
+        return deletedRows > 0
+    }
 }

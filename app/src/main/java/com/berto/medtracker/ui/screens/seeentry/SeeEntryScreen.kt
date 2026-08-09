@@ -1,13 +1,17 @@
 package com.berto.medtracker.ui.screens.seeentry
 
 import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -66,7 +70,7 @@ fun SeeEntryScreen(
     var entries by remember { mutableStateOf<List<Entry>>(emptyList()) }
 
     var selectedMed by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
+    var medDropdownExpanded by remember { mutableStateOf(false) }
 
     var dateFrom by remember {
         mutableStateOf(LocalDate.now().minusMonths(1))
@@ -77,6 +81,9 @@ fun SeeEntryScreen(
     }
 
     var showFilteredEntries by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf("") }
+
+    var entryBeingEdited by remember { mutableStateOf<Entry?>(null) }
 
     suspend fun refreshData() {
         val loadedMeds = withContext(Dispatchers.IO) {
@@ -196,9 +203,9 @@ fun SeeEntryScreen(
         )
 
         ExposedDropdownMenuBox(
-            expanded = expanded,
+            expanded = medDropdownExpanded,
             onExpandedChange = {
-                expanded = !expanded
+                medDropdownExpanded = !medDropdownExpanded
             }
         ) {
             OutlinedTextField(
@@ -209,7 +216,7 @@ fun SeeEntryScreen(
                 placeholder = { Text("No hay Meds disponibles") },
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(
-                        expanded = expanded
+                        expanded = medDropdownExpanded
                     )
                 },
                 modifier = Modifier
@@ -218,9 +225,9 @@ fun SeeEntryScreen(
             )
 
             ExposedDropdownMenu(
-                expanded = expanded,
+                expanded = medDropdownExpanded,
                 onDismissRequest = {
-                    expanded = false
+                    medDropdownExpanded = false
                 }
             ) {
                 meds.forEach { med ->
@@ -230,8 +237,9 @@ fun SeeEntryScreen(
                         },
                         onClick = {
                             selectedMed = med
-                            expanded = false
+                            medDropdownExpanded = false
                             showFilteredEntries = false
+                            message = ""
                         }
                     )
                 }
@@ -300,6 +308,7 @@ fun SeeEntryScreen(
             enabled = selectedMed.isNotBlank(),
             onClick = {
                 showFilteredEntries = true
+                message = ""
             }
         ) {
             Text("Ver registros")
@@ -324,7 +333,11 @@ fun SeeEntryScreen(
 
                 filteredEntries.forEach { entry ->
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                entryBeingEdited = entry
+                            },
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
@@ -353,6 +366,13 @@ fun SeeEntryScreen(
             }
         }
 
+        if (message.isNotBlank()) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+
         OutlinedButton(
             modifier = Modifier.fillMaxWidth(),
             onClick = onGoToAddEntry
@@ -366,21 +386,271 @@ fun SeeEntryScreen(
         ) {
             Text("Ir a Config")
         }
+    }
 
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            enabled = selectedEntries.firstOrNull() != null,
-            onClick = {
-                val lastEntryId = selectedEntries.firstOrNull()?.id
+    val editableEntry = entryBeingEdited
 
-                if (lastEntryId != null) {
-                    onGoToEditEntry(lastEntryId)
+    if (editableEntry != null) {
+        EditEntryPopup(
+            entry = editableEntry,
+            meds = meds,
+            entryRepository = entryRepository,
+            onDismiss = {
+                entryBeingEdited = null
+            },
+            onEntryDeleted = {
+                coroutineScope.launch {
+                    refreshData()
+                    entryBeingEdited = null
+                    message = "Registro borrado."
+                }
+            },
+            onEntryUpdated = {
+                coroutineScope.launch {
+                    refreshData()
+                    entryBeingEdited = null
+                    message = "Registro editado."
                 }
             }
-        ) {
-            Text("Editar último registro")
-        }
+        )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditEntryPopup(
+    entry: Entry,
+    meds: List<String>,
+    entryRepository: EntryRepository,
+    onDismiss: () -> Unit,
+    onEntryDeleted: () -> Unit,
+    onEntryUpdated: () -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    var selectedMed by remember(entry.id) {
+        mutableStateOf(entry.med)
+    }
+
+    var medDropdownExpanded by remember { mutableStateOf(false) }
+
+    var dosis by remember(entry.id) {
+        mutableStateOf(entry.dosis)
+    }
+
+    var info by remember(entry.id) {
+        mutableStateOf(entry.info)
+    }
+
+    var selectedDate by remember(entry.id) {
+        mutableStateOf(entry.fechaToma.toLocalDate())
+    }
+
+    var selectedTime by remember(entry.id) {
+        mutableStateOf(entry.fechaToma.toLocalTime().withSecond(0).withNano(0))
+    }
+
+    var localMessage by remember { mutableStateOf("") }
+
+    val selectedDateTime = LocalDateTime.of(selectedDate, selectedTime)
+
+    fun openTimePicker() {
+        TimePickerDialog(
+            context,
+            { _, hourOfDay, minute ->
+                selectedTime = LocalTime.of(hourOfDay, minute)
+            },
+            selectedTime.hour,
+            selectedTime.minute,
+            true
+        ).show()
+    }
+
+    fun openDatePicker() {
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                selectedDate = LocalDate.of(
+                    year,
+                    month + 1,
+                    dayOfMonth
+                )
+
+                openTimePicker()
+            },
+            selectedDate.year,
+            selectedDate.monthValue - 1,
+            selectedDate.dayOfMonth
+        ).show()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Editar registro")
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                ExposedDropdownMenuBox(
+                    expanded = medDropdownExpanded,
+                    onExpandedChange = {
+                        medDropdownExpanded = !medDropdownExpanded
+                    }
+                ) {
+                    OutlinedTextField(
+                        value = selectedMed,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Med") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(
+                                expanded = medDropdownExpanded
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = medDropdownExpanded,
+                        onDismissRequest = {
+                            medDropdownExpanded = false
+                        }
+                    ) {
+                        meds.forEach { med ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(med)
+                                },
+                                onClick = {
+                                    selectedMed = med
+                                    medDropdownExpanded = false
+                                    localMessage = ""
+                                }
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = dosis,
+                    onValueChange = {
+                        dosis = it
+                        localMessage = ""
+                    },
+                    label = { Text("Dosis") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "Fecha: ${selectedDateTime.format(seeEntryDateTimeFormatter)}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    OutlinedButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            openDatePicker()
+                        }
+                    ) {
+                        Text("Seleccionar fecha y hora")
+                    }
+                }
+
+                OutlinedTextField(
+                    value = info,
+                    onValueChange = {
+                        info = it
+                    },
+                    label = { Text("Info") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
+
+                if (localMessage.isNotBlank()) {
+                    Text(
+                        text = localMessage,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss
+                ) {
+                    Text("Salir")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            val deleted = withContext(Dispatchers.IO) {
+                                entryRepository.deleteEntry(entry.id)
+                            }
+
+                            if (deleted) {
+                                onEntryDeleted()
+                            } else {
+                                localMessage = "No se pudo borrar el registro."
+                            }
+                        }
+                    }
+                ) {
+                    Text("Borrar")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        val cleanMed = selectedMed.trim()
+                        val cleanDosis = dosis.trim()
+
+                        if (cleanMed.isBlank()) {
+                            localMessage = "Debes seleccionar una Med."
+                            return@OutlinedButton
+                        }
+
+                        if (cleanDosis.isBlank()) {
+                            localMessage = "La dosis no puede estar vacía."
+                            return@OutlinedButton
+                        }
+
+                        val editedEntry = entry.copy(
+                            med = cleanMed,
+                            dosis = cleanDosis,
+                            fechaToma = LocalDateTime.of(selectedDate, selectedTime),
+                            info = info.trim()
+                        )
+
+                        coroutineScope.launch {
+                            val updated = withContext(Dispatchers.IO) {
+                                entryRepository.updateEntry(editedEntry)
+                            }
+
+                            if (updated) {
+                                onEntryUpdated()
+                            } else {
+                                localMessage = "No se pudo editar el registro."
+                            }
+                        }
+                    }
+                ) {
+                    Text("Editar")
+                }
+            }
+        }
+    )
 }
 
 private fun calculateAverageDaysText(

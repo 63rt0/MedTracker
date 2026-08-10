@@ -55,3 +55,32 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
+
+val copyReleaseApkToReleases by tasks.registering(org.gradle.api.tasks.Copy::class) {
+    val releaseApkDir = layout.buildDirectory.dir("outputs/apk/release")
+
+    from(releaseApkDir) {
+        include("*.apk")
+    }
+
+    into(rootProject.layout.projectDirectory.dir("releases"))
+
+    rename {
+        "medtracker.apk"
+    }
+
+    onlyIf {
+        val folder = releaseApkDir.get().asFile
+
+        folder.exists() &&
+                folder.listFiles { file ->
+                    file.extension == "apk"
+                }?.isNotEmpty() == true
+    }
+}
+
+tasks.configureEach {
+    if (name == "assembleRelease" || name == "packageRelease") {
+        finalizedBy(copyReleaseApkToReleases)
+    }
+}

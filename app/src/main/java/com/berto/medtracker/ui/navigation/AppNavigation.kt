@@ -46,7 +46,6 @@ fun AppNavigation(
                         }
                     },
                     icon = {
-                        Text("A")
                     },
                     label = {
                         Text("Añadir")
@@ -61,7 +60,6 @@ fun AppNavigation(
                         }
                     },
                     icon = {
-                        Text("R")
                     },
                     label = {
                         Text("Registros")
@@ -76,7 +74,6 @@ fun AppNavigation(
                         }
                     },
                     icon = {
-                        Text("C")
                     },
                     label = {
                         Text("Config")

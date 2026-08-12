@@ -27,6 +27,8 @@ import com.berto.medtracker.data.repository.EntryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.berto.medtracker.ui.components.ScreenHeader
+import androidx.compose.foundation.background
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,17 +61,13 @@ fun ConfigScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Text(
-            text = "Config",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Text(
-            text = "Gestión de medicamentos disponibles para la app.",
-            style = MaterialTheme.typography.bodyMedium
+        ScreenHeader(
+            title = "MedTracker",
+            subtitle = "Cambios en la configuración"
         )
 
         OutlinedTextField(

@@ -9,6 +9,9 @@ import androidx.lifecycle.lifecycleScope
 import com.berto.medtracker.data.local.MedTrackerDbHelper
 import com.berto.medtracker.data.repository.EntryRepository
 import com.berto.medtracker.ui.navigation.AppNavigation
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import com.berto.medtracker.ui.theme.MedTrackerTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -22,8 +25,11 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            MaterialTheme {
-                Surface {
+            MedTrackerTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
                     AppNavigation(
                         entryRepository = entryRepository,
                         lifecycleScope = lifecycleScope

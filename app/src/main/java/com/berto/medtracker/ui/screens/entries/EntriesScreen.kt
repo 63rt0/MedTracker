@@ -47,6 +47,8 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
+import com.berto.medtracker.ui.components.ScreenHeader
+import androidx.compose.foundation.background
 
 private val seeEntryDateTimeFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
@@ -185,18 +187,14 @@ fun EntriesScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Text(
-            text = "Registros",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Text(
-            text = "Selecciona una Med para ver sus registros.",
-            style = MaterialTheme.typography.bodyMedium
+        ScreenHeader(
+            title = "MedTracker",
+            subtitle = "Ver y editar registros"
         )
 
         ExposedDropdownMenuBox(

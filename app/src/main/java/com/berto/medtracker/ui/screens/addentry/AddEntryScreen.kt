@@ -41,6 +41,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import com.berto.medtracker.ui.components.ScreenHeader
+import androidx.compose.foundation.background
 
 private val displayDateTimeFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
@@ -150,13 +152,14 @@ fun AddEntryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Text(
-            text = "Añadir",
-            style = MaterialTheme.typography.headlineMedium
+        ScreenHeader(
+            title = "MedTracker",
+            subtitle = "Añadir un nuevo registro"
         )
 
         ExposedDropdownMenuBox(

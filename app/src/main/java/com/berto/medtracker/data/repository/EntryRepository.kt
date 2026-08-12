@@ -201,4 +201,53 @@ class EntryRepository(
 
         return deletedRows > 0
     }
+
+    fun replaceAllData(
+        meds: List<String>,
+        entries: List<Entry>
+    ) {
+        val db = dbHelper.writableDatabase
+
+        db.beginTransaction()
+
+        try {
+            db.delete("entries", null, null)
+            db.delete("meds", null, null)
+
+            meds.forEach { med ->
+                val cleanMed = med.trim()
+
+                if (cleanMed.isNotBlank()) {
+                    val values = ContentValues().apply {
+                        put("name", cleanMed)
+                    }
+
+                    db.insertWithOnConflict(
+                        "meds",
+                        null,
+                        values,
+                        SQLiteDatabase.CONFLICT_IGNORE
+                    )
+                }
+            }
+
+            entries.forEach { entry ->
+                val values = ContentValues().apply {
+                    put("med", entry.med)
+                    put("dosis", entry.dosis)
+                    put("efectos", entry.efectos)
+                    put("fecha_toma", entry.fechaToma.format(formatter))
+                    put("fecha_registro", entry.fechaRegistro.format(formatter))
+                    put("info", entry.info)
+                }
+
+                db.insert("entries", null, values)
+            }
+
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
 }

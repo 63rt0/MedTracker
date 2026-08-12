@@ -29,6 +29,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.berto.medtracker.ui.components.ScreenHeader
 import androidx.compose.foundation.background
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import com.berto.medtracker.data.backup.BackupService
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +49,15 @@ fun ConfigScreen(
     var message by remember { mutableStateOf("") }
     var newMedError by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+
+    val backupService = remember {
+        BackupService(
+            context = context,
+            entryRepository = entryRepository
+        )
+    }
+
     suspend fun refreshMeds() {
         meds = withContext(Dispatchers.IO) {
             entryRepository.getAllMeds()
@@ -53,6 +67,28 @@ fun ConfigScreen(
             selectedMed = meds.firstOrNull().orEmpty()
         }
     }
+
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            if (uri != null) {
+                coroutineScope.launch {
+                    try {
+                        withContext(Dispatchers.IO) {
+                            backupService.importFromJsonUri(uri)
+                        }
+
+                        refreshMeds()
+                        message = "Importación completada. Se han sustituido los datos actuales."
+                    } catch (exception: Exception) {
+                        message = "No se pudo importar el archivo."
+                    }
+                }
+            }
+        }
+    )
+
 
     LaunchedEffect(Unit) {
         refreshMeds()
@@ -195,6 +231,58 @@ fun ConfigScreen(
             }
         ) {
             Text("Borrar Med")
+        }
+
+        Text(
+            text = "Base de datos",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                coroutineScope.launch {
+                    try {
+                        val uri = withContext(Dispatchers.IO) {
+                            backupService.exportToJsonFile()
+                        }
+
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "application/json"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+
+                        val chooser = Intent.createChooser(
+                            shareIntent,
+                            "Exportar BBDD"
+                        )
+
+                        context.startActivity(chooser)
+
+                        message = "Archivo de exportación preparado."
+                    } catch (exception: Exception) {
+                        message = "No se pudo exportar la BBDD."
+                    }
+                }
+            }
+        ) {
+            Text("Exportar BBDD")
+        }
+
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                importLauncher.launch(
+                    arrayOf(
+                        "application/json",
+                        "text/plain",
+                        "*/*"
+                    )
+                )
+            }
+        ) {
+            Text("Importar BBDD")
         }
 
         if (message.isNotBlank()) {

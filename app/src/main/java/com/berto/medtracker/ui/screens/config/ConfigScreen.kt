@@ -1,15 +1,22 @@
 package com.berto.medtracker.ui.screens.config
 
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -22,18 +29,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.berto.medtracker.data.backup.BackupService
 import com.berto.medtracker.data.repository.EntryRepository
+import com.berto.medtracker.ui.components.ScreenHeader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.berto.medtracker.ui.components.ScreenHeader
-import androidx.compose.foundation.background
-import android.content.Intent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
-import com.berto.medtracker.data.backup.BackupService
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +51,9 @@ fun ConfigScreen(
     var expanded by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
     var newMedError by remember { mutableStateOf(false) }
+    var showImportConfirmation by remember {
+        mutableStateOf(false)
+    }
 
     val context = LocalContext.current
 
@@ -68,7 +74,6 @@ fun ConfigScreen(
         }
     }
 
-
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
@@ -80,15 +85,16 @@ fun ConfigScreen(
                         }
 
                         refreshMeds()
-                        message = "Importación completada. Se han sustituido los datos actuales."
-                    } catch (exception: Exception) {
+
+                        message =
+                            "Importación completada. Se han sustituido los datos actuales."
+                    } catch (_: Exception) {
                         message = "No se pudo importar el archivo."
                     }
                 }
             }
         }
     )
-
 
     LaunchedEffect(Unit) {
         refreshMeds()
@@ -101,9 +107,19 @@ fun ConfigScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+
         ScreenHeader(
-            title = "MedTracker",
-            subtitle = "Cambios en la configuración"
+            title = "Config",
+            subtitle = "Meds y copias de seguridad"
+        )
+
+        // =====================================================
+        // AÑADIR MED
+        // =====================================================
+
+        Text(
+            text = "Añadir Med",
+            style = MaterialTheme.typography.titleMedium
         )
 
         OutlinedTextField(
@@ -113,8 +129,12 @@ fun ConfigScreen(
                 newMedError = false
                 message = ""
             },
-            label = { Text("Añadir un Med") },
-            placeholder = { Text("Ejemplo: Paracetamol") },
+            label = {
+                Text("Nuevo Med")
+            },
+            placeholder = {
+                Text("Ejemplo: Paracetamol")
+            },
             isError = newMedError,
             supportingText = {
                 if (newMedError) {
@@ -137,6 +157,7 @@ fun ConfigScreen(
                 }
 
                 coroutineScope.launch {
+
                     val added = withContext(Dispatchers.IO) {
                         entryRepository.addMed(medName)
                     }
@@ -148,7 +169,8 @@ fun ConfigScreen(
                         newMed = ""
                         message = "Med añadido."
                     } else {
-                        message = "Ese Med ya existe. No se ha añadido de nuevo."
+                        message =
+                            "Ese Med ya existe. No se ha añadido de nuevo."
                     }
                 }
             }
@@ -156,8 +178,17 @@ fun ConfigScreen(
             Text("Añadir Med")
         }
 
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 4.dp),
+            thickness = 1.dp
+        )
+
+        // =====================================================
+        // BORRAR MED
+        // =====================================================
+
         Text(
-            text = "Borrar un Med",
+            text = "Borrar Med",
             style = MaterialTheme.typography.titleMedium
         )
 
@@ -167,12 +198,17 @@ fun ConfigScreen(
                 expanded = !expanded
             }
         ) {
+
             OutlinedTextField(
                 value = selectedMed,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Med") },
-                placeholder = { Text("No hay Meds disponibles") },
+                label = {
+                    Text("Med")
+                },
+                placeholder = {
+                    Text("No hay Meds disponibles")
+                },
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(
                         expanded = expanded
@@ -208,6 +244,7 @@ fun ConfigScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = selectedMed.isNotBlank(),
             onClick = {
+
                 val medToDelete = selectedMed.trim()
 
                 if (medToDelete.isBlank()) {
@@ -216,6 +253,7 @@ fun ConfigScreen(
                 }
 
                 coroutineScope.launch {
+
                     val deleted = withContext(Dispatchers.IO) {
                         entryRepository.deleteMed(medToDelete)
                     }
@@ -233,63 +271,129 @@ fun ConfigScreen(
             Text("Borrar Med")
         }
 
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 4.dp),
+            thickness = 1.dp
+        )
+
+        // =====================================================
+        // BASE DE DATOS
+        // =====================================================
+
         Text(
             text = "Base de datos",
             style = MaterialTheme.typography.titleMedium
         )
 
-        OutlinedButton(
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            onClick = {
-                coroutineScope.launch {
-                    try {
-                        val uri = withContext(Dispatchers.IO) {
-                            backupService.exportToJsonFile()
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+
+            OutlinedButton(
+                modifier = Modifier.weight(1f),
+                onClick = {
+
+                    coroutineScope.launch {
+
+                        try {
+
+                            val uri = withContext(Dispatchers.IO) {
+                                backupService.exportToJsonFile()
+                            }
+
+                            val shareIntent =
+                                Intent(Intent.ACTION_SEND).apply {
+                                    type = "application/json"
+                                    putExtra(
+                                        Intent.EXTRA_STREAM,
+                                        uri
+                                    )
+                                    addFlags(
+                                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    )
+                                }
+
+                            context.startActivity(
+                                Intent.createChooser(
+                                    shareIntent,
+                                    "Exportar BBDD"
+                                )
+                            )
+
+                            message =
+                                "Archivo de exportación preparado."
+
+                        } catch (_: Exception) {
+
+                            message =
+                                "No se pudo exportar la BBDD."
                         }
-
-                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                            type = "application/json"
-                            putExtra(Intent.EXTRA_STREAM, uri)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-
-                        val chooser = Intent.createChooser(
-                            shareIntent,
-                            "Exportar BBDD"
-                        )
-
-                        context.startActivity(chooser)
-
-                        message = "Archivo de exportación preparado."
-                    } catch (exception: Exception) {
-                        message = "No se pudo exportar la BBDD."
                     }
                 }
+            ) {
+                Text("Exportar")
             }
-        ) {
-            Text("Exportar BBDD")
-        }
 
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {
-                importLauncher.launch(
-                    arrayOf(
-                        "application/json",
-                        "text/plain",
-                        "*/*"
-                    )
-                )
+            OutlinedButton(
+                modifier = Modifier.weight(1f),
+                onClick = {
+                    showImportConfirmation = true
+                }
+            ) {
+                Text("Importar")
             }
-        ) {
-            Text("Importar BBDD")
         }
 
         if (message.isNotBlank()) {
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
             )
         }
+    }
+    if (showImportConfirmation) {
+        AlertDialog(
+            onDismissRequest = {
+                showImportConfirmation = false
+            },
+            title = {
+                Text("Importar base de datos")
+            },
+            text = {
+                Text(
+                    "La importación sustituirá todos los medicamentos " +
+                            "y registros actuales. Esta acción no se puede deshacer. " +
+                            "Es recomendable exportar una copia antes de continuar."
+                )
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        showImportConfirmation = false
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showImportConfirmation = false
+
+                        importLauncher.launch(
+                            arrayOf(
+                                "application/json",
+                                "text/plain",
+                                "*/*"
+                            )
+                        )
+                    }
+                ) {
+                    Text("Continuar")
+                }
+            }
+        )
     }
 }

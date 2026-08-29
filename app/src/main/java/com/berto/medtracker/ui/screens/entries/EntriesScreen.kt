@@ -2,6 +2,7 @@ package com.berto.medtracker.ui.screens.entries
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -38,6 +40,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.berto.medtracker.data.repository.EntryRepository
 import com.berto.medtracker.domain.model.Entry
+import com.berto.medtracker.ui.components.ScreenHeader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -47,8 +50,6 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
-import com.berto.medtracker.ui.components.ScreenHeader
-import androidx.compose.foundation.background
 
 private val seeEntryDateTimeFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
@@ -79,9 +80,7 @@ fun EntriesScreen(
         mutableStateOf(LocalDate.now())
     }
 
-    var showFilteredEntries by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
-
     var entryBeingEdited by remember { mutableStateOf<Entry?>(null) }
 
     suspend fun refreshData() {
@@ -131,7 +130,7 @@ fun EntriesScreen(
                     dayOfMonth
                 )
 
-                showFilteredEntries = false
+                message = ""
             },
             dateFrom.year,
             dateFrom.monthValue - 1,
@@ -149,7 +148,7 @@ fun EntriesScreen(
                     dayOfMonth
                 )
 
-                showFilteredEntries = false
+                message = ""
             },
             dateTo.year,
             dateTo.monthValue - 1,
@@ -193,7 +192,7 @@ fun EntriesScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         ScreenHeader(
-            title = "MedTracker",
+            title = "Registros",
             subtitle = "Ver y editar registros"
         )
 
@@ -233,7 +232,6 @@ fun EntriesScreen(
                         onClick = {
                             selectedMed = med
                             medDropdownExpanded = false
-                            showFilteredEntries = false
                             message = ""
                         }
                     )
@@ -247,11 +245,6 @@ fun EntriesScreen(
                 style = MaterialTheme.typography.bodyMedium
             )
         } else {
-            Text(
-                text = "Med seleccionada: $selectedMed",
-                style = MaterialTheme.typography.titleMedium
-            )
-
             if (mostRecentFechaToma == null) {
                 Text(
                     text = "Fecha más reciente: sin registros para esta Med.",
@@ -264,7 +257,9 @@ fun EntriesScreen(
                 )
             } else {
                 Text(
-                    text = "Fecha más reciente: ${mostRecentFechaToma.format(seeEntryDateTimeFormatter)}",
+                    text = "Fecha más reciente: ${
+                        mostRecentFechaToma.format(seeEntryDateTimeFormatter)
+                    }",
                     style = MaterialTheme.typography.bodyMedium
                 )
 
@@ -276,8 +271,8 @@ fun EntriesScreen(
         }
 
         Text(
-            text = "Ver registros",
-            style = MaterialTheme.typography.titleLarge
+            text = "Filtro de fechas",
+            style = MaterialTheme.typography.titleMedium
         )
 
         OutlinedButton(
@@ -298,64 +293,65 @@ fun EntriesScreen(
             Text("Hasta: ${dateTo.format(seeEntryDateFormatter)}")
         }
 
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            enabled = selectedMed.isNotBlank(),
-            onClick = {
-                showFilteredEntries = true
-                message = ""
-            }
-        ) {
-            Text("Ver registros")
-        }
+        Text(
+            text = "Registros",
+            style = MaterialTheme.typography.titleMedium
+        )
 
-        if (showFilteredEntries) {
-            if (dateFrom.isAfter(dateTo)) {
-                Text(
-                    text = "La fecha Desde no puede ser posterior a la fecha Hasta.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            } else if (filteredEntries.isEmpty()) {
-                Text(
-                    text = "No hay registros para $selectedMed entre las fechas seleccionadas.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            } else {
-                Text(
-                    text = "Registros encontrados: ${filteredEntries.size}",
-                    style = MaterialTheme.typography.titleMedium
-                )
+        if (selectedMed.isBlank()) {
+            Text(
+                text = "Selecciona una Med para ver sus registros.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        } else if (dateFrom.isAfter(dateTo)) {
+            Text(
+                text = "La fecha Desde no puede ser posterior a la fecha Hasta.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        } else if (filteredEntries.isEmpty()) {
+            Text(
+                text = "No hay registros para $selectedMed entre las fechas seleccionadas.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        } else {
+            Text(
+                text = "Registros encontrados: ${filteredEntries.size}",
+                style = MaterialTheme.typography.bodyMedium
+            )
 
-                filteredEntries.forEach { entry ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                entryBeingEdited = entry
-                            },
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
+            filteredEntries.forEach { entry ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            entryBeingEdited = entry
+                        },
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = "Fecha: ${entry.fechaToma.format(seeEntryDateTimeFormatter)}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                        Text(
+                            text = "Fecha: ${
+                                entry.fechaToma.format(seeEntryDateTimeFormatter)
+                            }",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
 
-                            Text(
-                                text = "Dosis: ${entry.dosis}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                        Text(
+                            text = "Dosis: ${entry.dosis}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
 
-                            Text(
-                                text = "Info: ${entry.info.ifBlank { "Sin info" }}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
+                        Text(
+                            text = "Info: ${
+                                entry.info.ifBlank { "Sin info" }
+                            }",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }
@@ -364,7 +360,8 @@ fun EntriesScreen(
         if (message.isNotBlank()) {
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -433,6 +430,10 @@ private fun EditEntryPopup(
     }
 
     var localMessage by remember { mutableStateOf("") }
+
+    var showDeleteConfirmation by remember {
+        mutableStateOf(false)
+    }
 
     val selectedDateTime = LocalDateTime.of(selectedDate, selectedTime)
 
@@ -532,7 +533,9 @@ private fun EditEntryPopup(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "Fecha: ${selectedDateTime.format(seeEntryDateTimeFormatter)}",
+                        text = "Fecha: ${
+                            selectedDateTime.format(seeEntryDateTimeFormatter)
+                        }",
                         style = MaterialTheme.typography.bodyMedium
                     )
 
@@ -559,7 +562,8 @@ private fun EditEntryPopup(
                 if (localMessage.isNotBlank()) {
                     Text(
                         text = localMessage,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -576,17 +580,7 @@ private fun EditEntryPopup(
 
                 OutlinedButton(
                     onClick = {
-                        coroutineScope.launch {
-                            val deleted = withContext(Dispatchers.IO) {
-                                entryRepository.deleteEntry(entry.id)
-                            }
-
-                            if (deleted) {
-                                onEntryDeleted()
-                            } else {
-                                localMessage = "No se pudo borrar el registro."
-                            }
-                        }
+                        showDeleteConfirmation = true
                     }
                 ) {
                     Text("Borrar")
@@ -610,7 +604,10 @@ private fun EditEntryPopup(
                         val editedEntry = entry.copy(
                             med = cleanMed,
                             dosis = cleanDosis,
-                            fechaToma = LocalDateTime.of(selectedDate, selectedTime),
+                            fechaToma = LocalDateTime.of(
+                                selectedDate,
+                                selectedTime
+                            ),
                             info = info.trim()
                         )
 
@@ -632,6 +629,53 @@ private fun EditEntryPopup(
             }
         }
     )
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteConfirmation = false
+            },
+            title = {
+                Text("Borrar registro")
+            },
+            text = {
+                Text(
+                    "¿Seguro que quieres borrar este registro? " +
+                            "Esta acción no se puede deshacer."
+                )
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        showDeleteConfirmation = false
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirmation = false
+
+                        coroutineScope.launch {
+                            val deleted = withContext(Dispatchers.IO) {
+                                entryRepository.deleteEntry(entry.id)
+                            }
+
+                            if (deleted) {
+                                onEntryDeleted()
+                            } else {
+                                localMessage =
+                                    "No se pudo borrar el registro."
+                            }
+                        }
+                    }
+                ) {
+                    Text("Borrar")
+                }
+            }
+        )
+    }
 }
 
 private fun calculateAverageDaysText(

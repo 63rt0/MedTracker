@@ -417,6 +417,10 @@ private fun EditEntryPopup(
         mutableStateOf(entry.dosis)
     }
 
+    var efectos by remember { entry.id
+        mutableStateOf(entry.efectos)
+    }
+
     var info by remember(entry.id) {
         mutableStateOf(entry.info)
     }
@@ -519,14 +523,18 @@ private fun EditEntryPopup(
                 }
 
                 OutlinedTextField(
-                    value = dosis,
+                    value = efectos,
                     onValueChange = {
-                        dosis = it
+                        efectos = it
                         localMessage = ""
                     },
-                    label = { Text("Dosis") },
+                    label = { Text("Efectos") },
+                    placeholder = {
+                        Text("Efectos observados")
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    minLines = 2,
+                    maxLines = 4
                 )
 
                 Column(
@@ -604,6 +612,7 @@ private fun EditEntryPopup(
                         val editedEntry = entry.copy(
                             med = cleanMed,
                             dosis = cleanDosis,
+                            efectos = efectos.trim(),
                             fechaToma = LocalDateTime.of(
                                 selectedDate,
                                 selectedTime
